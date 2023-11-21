@@ -17,6 +17,11 @@ from auth.schemas import UserRead, UserCreate
 from board.board_api import router as board_router
 from post.post_api import router as post_router
 
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+
+from redis import asyncio as aioredis
+
 app = FastAPI(
     title="mini project"
 )
@@ -42,3 +47,8 @@ current_user = fastapi_users.current_user()
 
 app.include_router(board_router)
 app.include_router(post_router)
+
+@app.on_event("startup")
+async def startup():
+    redis = aioredis.from_url("redis://localhost")
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
