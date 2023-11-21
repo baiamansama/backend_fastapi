@@ -1,8 +1,9 @@
+from datetime import datetime
 from typing import AsyncGenerator
 
 from fastapi import Depends
 from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
-from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
+from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, TIMESTAMP
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -28,6 +29,24 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     is_superuser: bool = Column(Boolean, default=False, nullable=False)
     is_verified: bool = Column(Boolean, default=False, nullable=False)
 
+class Board(Base):
+    __tablename__ = "board"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+    public = Column(Boolean, default=True, nullable=False)
+    creator_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=False)
+
+class Post(Base):
+    __tablename__ = "post"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    content = Column(String, nullable=False)
+    creator_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    board_id = Column(Integer, ForeignKey("board.id"), nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=False)
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
@@ -35,7 +54,9 @@ async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 async def create_db_and_tables():
     async with engine.begin() as conn:
+        print("creating tables.....")
         await conn.run_sync(Base.metadata.create_all)
+        print("tables created!")
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:

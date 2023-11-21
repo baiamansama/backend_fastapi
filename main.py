@@ -14,6 +14,8 @@ from auth.auth import auth_backend
 from auth.database import User
 from auth.manager import get_user_manager
 from auth.schemas import UserRead, UserCreate
+from board.board_api import router as board_router
+from post.post_api import router as post_router
 
 app = FastAPI(
     title="mini project"
@@ -38,11 +40,5 @@ app.include_router(
 
 current_user = fastapi_users.current_user()
 
-@app.get("/protected-route")
-def protected_route(user: User = Depends(current_user)):
-    return f"Hello, {user.username}"
-
-
-@app.get("/unprotected-route")
-def unprotected_route():
-    return f"Hello, anonym"
+app.include_router(board_router)
+app.include_router(post_router)
