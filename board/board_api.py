@@ -1,5 +1,5 @@
 # boards/board_api.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_users import fastapi_users, FastAPIUsers
 from sqlalchemy import desc, func
 from auth.database import User
@@ -113,7 +113,9 @@ async def get_board(
 @router.get("/list_boards")
 async def list_boards(
     current_user: UserRead = Depends(current_user),
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0)
 ):
     query = select(board, func.count(post.c.id).label("post_count")).\
         outerjoin(post, board.c.id == post.c.board_id).\
@@ -123,7 +125,8 @@ async def list_boards(
         query = query.where((board.c.public == True) | (board.c.creator_id == current_user.id))
     else:
         query = query.where(board.c.public == True)
-    query = query.order_by(desc("post_count"))
+    # query = query.order_by(desc("post_count"))
+    query = query.order_by(desc("post_count")).offset(offset).limit(limit)
     result = await session.execute(query)
     board_records = result.all()
 
